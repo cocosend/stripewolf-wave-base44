@@ -1,0 +1,28 @@
+name: Stripewolf quality gate
+
+on:
+  pull_request:
+  push:
+    branches: [main, fix/ios-track-loading-audio-demos]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Import regression tests
+        run: npm test
+      - name: Build production bundle
+        run: npm run build

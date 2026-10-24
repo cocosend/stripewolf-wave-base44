@@ -5,7 +5,7 @@ import * as L from 'react/jsx-runtime';
 import { NavLink as $s, Outlet as us, useNavigate as Ro } from 'react-router-dom';
 import { ResponsiveContainer as hT, BarChart as FK, CartesianGrid as MW, XAxis as YW, YAxis as fG, Tooltip as Xw, Bar as OV } from 'recharts';
 import { dataApi as J } from './data';
-import { importTrack, resumeAudio } from './audio-import';
+import { importTrack, importRenderedTrack, resumeAudio } from './audio-import';
 import { DemoPicker } from './DemoPicker';
 var PRESETS = {
     maddix: {
@@ -120,7 +120,7 @@ function safeFilter(e) {
 var clamp = (e, t, n) => Math.min(n, Math.max(t, e)),
   hg = e => 300 * (2e4 / 300) ** clamp(e, 0, 1),
   gg = {
-    master: .74,
+    master: .82,
     wet: .18,
     feedback: .16,
     echoSend: .17
@@ -323,7 +323,7 @@ var yg = 25,
           playing: !1
         };
       };
-      this.deckA = t(), this.deckB = t(), this.masterFilter = e.createBiquadFilter(), this.masterFilter.type = `lowpass`, this.masterFilter.Q.value = .58, this.punchEQ = e.createBiquadFilter(), this.punchEQ.type = `peaking`, this.punchEQ.frequency.value = 135, this.punchEQ.Q.value = 1.4, this.punchEQ.gain.value = 0, this.driveIn = e.createGain(), this.driveIn.gain.value = 1, this.distNode = e.createWaveShaper(), this.driveOut = e.createGain(), this.driveOut.gain.value = 2.4, this.masterInput = e.createGain(), this.masterInput.gain.value = .5, this.dcBlock = e.createBiquadFilter(), this.dcBlock.type = `highpass`, this.dcBlock.frequency.value = 20, this.dcBlock.Q.value = .707, this.dry = e.createGain(), this.dry.gain.value = 1, this.echoSend = e.createGain(), this.echoSend.gain.value = gg.echoSend, this.delayNode = e.createDelay(1.5), this.delayWet = e.createGain(), this.delayWet.gain.value = gg.wet, this.feedbackGain = e.createGain(), this.feedbackGain.gain.value = gg.feedback, this.glue = e.createDynamicsCompressor(), this.glue.threshold.value = -8, this.glue.ratio.value = 2, this.glue.knee.value = 9, this.glue.attack.value = .012, this.glue.release.value = .18, this.masterGain = e.createGain(), this.masterGain.gain.value = this.masterLevel * gg.master, this.limiter = e.createDynamicsCompressor(), this.limiter.threshold.value = -2.4, this.limiter.knee.value = 1.2, this.limiter.ratio.value = 18, this.limiter.attack.value = .002, this.limiter.release.value = .085, this.cueBus = e.createGain(), this.cueBus.gain.value = 0, this.micGain = e.createGain(), this.micGain.gain.value = 0, this.micAnalyser = e.createAnalyser(), this.micAnalyser.fftSize = 1024, this.deckA.mainGain.connect(this.masterInput), this.deckB.mainGain.connect(this.masterInput), this.masterInput.connect(this.dcBlock), this.dcBlock.connect(this.masterFilter), this.masterFilter.connect(this.punchEQ), this.punchEQ.connect(this.driveIn), this.driveIn.connect(this.distNode), this.distNode.connect(this.driveOut), this.driveOut.connect(this.dry), this.dry.connect(this.glue), this.driveOut.connect(this.echoSend), this.echoSend.connect(this.delayNode), this.delayNode.connect(this.feedbackGain), this.feedbackGain.connect(this.delayNode), this.delayNode.connect(this.delayWet), this.delayWet.connect(this.glue), this.deckA.fxSend.connect(this.echoSend), this.deckB.fxSend.connect(this.echoSend), this.deckA.cueGain.connect(this.cueBus), this.deckB.cueGain.connect(this.cueBus), this.cueBus.connect(this.glue), this.micAnalyser.connect(this.micGain), this.micGain.connect(this.glue), this.glue.connect(this.limiter), this.limiter.connect(this.masterGain), this.masterGain.connect(e.destination);
+      this.deckA = t(), this.deckB = t(), this.masterFilter = e.createBiquadFilter(), this.masterFilter.type = `lowpass`, this.masterFilter.Q.value = .58, this.punchEQ = e.createBiquadFilter(), this.punchEQ.type = `peaking`, this.punchEQ.frequency.value = 135, this.punchEQ.Q.value = 1.4, this.punchEQ.gain.value = 0, this.driveIn = e.createGain(), this.driveIn.gain.value = 1, this.distNode = e.createWaveShaper(), this.driveOut = e.createGain(), this.driveOut.gain.value = 1.95, this.masterInput = e.createGain(), this.masterInput.gain.value = .5, this.dcBlock = e.createBiquadFilter(), this.dcBlock.type = `highpass`, this.dcBlock.frequency.value = 20, this.dcBlock.Q.value = .707, this.dry = e.createGain(), this.dry.gain.value = 1, this.echoSend = e.createGain(), this.echoSend.gain.value = gg.echoSend, this.delayNode = e.createDelay(1.5), this.delayWet = e.createGain(), this.delayWet.gain.value = gg.wet, this.feedbackGain = e.createGain(), this.feedbackGain.gain.value = gg.feedback, this.glue = e.createDynamicsCompressor(), this.glue.threshold.value = -8, this.glue.ratio.value = 2, this.glue.knee.value = 9, this.glue.attack.value = .012, this.glue.release.value = .18, this.masterGain = e.createGain(), this.masterGain.gain.value = this.masterLevel * gg.master, this.limiter = e.createDynamicsCompressor(), this.limiter.threshold.value = -2.4, this.limiter.knee.value = 1.2, this.limiter.ratio.value = 18, this.limiter.attack.value = .002, this.limiter.release.value = .085, this.cueBus = e.createGain(), this.cueBus.gain.value = 0, this.micGain = e.createGain(), this.micGain.gain.value = 0, this.micAnalyser = e.createAnalyser(), this.micAnalyser.fftSize = 1024, this.deckA.mainGain.connect(this.masterInput), this.deckB.mainGain.connect(this.masterInput), this.masterInput.connect(this.dcBlock), this.dcBlock.connect(this.masterFilter), this.masterFilter.connect(this.punchEQ), this.punchEQ.connect(this.driveIn), this.driveIn.connect(this.distNode), this.distNode.connect(this.driveOut), this.driveOut.connect(this.dry), this.dry.connect(this.glue), this.driveOut.connect(this.echoSend), this.echoSend.connect(this.delayNode), this.delayNode.connect(this.feedbackGain), this.feedbackGain.connect(this.delayNode), this.delayNode.connect(this.delayWet), this.delayWet.connect(this.glue), this.deckA.fxSend.connect(this.echoSend), this.deckB.fxSend.connect(this.echoSend), this.deckA.cueGain.connect(this.cueBus), this.deckB.cueGain.connect(this.cueBus), this.cueBus.connect(this.glue), this.micAnalyser.connect(this.micGain), this.micGain.connect(this.glue), this.glue.connect(this.limiter), this.limiter.connect(this.masterGain), this.masterGain.connect(e.destination);
       let n = e.createBuffer(1, Math.floor(e.sampleRate * 2), e.sampleRate),
         r = n.getChannelData(0);
       for (let e = 0; e < r.length; e += 1) r[e] = Math.random() * 2 - 1;
@@ -783,7 +783,8 @@ function Deck({
   onBpm: i,
   onVolume: a,
   onFile: o,
-  onSync: s
+  onSync: s,
+  onDemo: onDemo
 }) {
   const [importError, setImportError] = _.useState("");
   let [c, l] = (0, _.useState)(!1),
@@ -828,7 +829,7 @@ function Deck({
         onClick: () => n(`track`),
         children: `MY TRACK`
       })]
-    }), t.mode === `track` ? (0, L.jsxs)(L.Fragment, {
+    }), (0, L.jsxs)(L.Fragment, {
       children: [(0, L.jsxs)(`label`, {
         className: `deck-file-btn`,
         children: [c ? `ЗАГРУЗКА...` : `LOAD AUDIO FILE`, (0, L.jsx)(`input`, {
@@ -841,19 +842,16 @@ function Deck({
         })]
       }), (0, L.jsx)(`div`, {
         className: `deck-track`,
-        children: importError || (t.trackName ? `${t.trackName} · ${Math.floor(t.duration / 60)}:${String(Math.floor(t.duration % 60)).padStart(2, `0`)} (LOOP)` : `NO FILE LOADED — выберите аудиофайл`)
+        role: importError ? `alert` : undefined,
+        children: importError || (t.trackName ? `${t.trackName} · ${Math.floor(t.duration / 60)}:${String(Math.floor(t.duration % 60)).padStart(2, `0`)} (LOOP)` : t.mode === `synth` ? `Встроенный грув · Для сведения добавьте свой трек или выберите демо` : `NO FILE LOADED — выберите аудиофайл`)
       })]
-    }) : (0, L.jsx)(`div`, {
-      className: `deck-track`,
-      children: `Встроенный грув: 909 кик / 808 саб / 303 линия под пресет`
     }), (0, L.jsx)(DemoPicker, {
       busy: c,
-      onLoad: async (file, bpm) => {
+      onLoad: async (rendering, bpm) => {
         l(true);
         setImportError("");
         try {
-          await o(file);
-          i(bpm);
+          await onDemo(rendering, bpm);
         } catch (error) {
           setImportError(error instanceof Error ? error.message : "Ошибка загрузки");
         } finally {
@@ -1387,6 +1385,20 @@ function Dashboard() {
         });
       }
     },
+    F = async (t, rendering, bpm) => {
+      const result = await importRenderedTrack(e, t, rendering);
+      if (result) {
+        const deck = e.get(t);
+        e.setDeckBpm(t, bpm);
+        y(t, {
+          mode: `track`,
+          trackName: result.name,
+          duration: result.duration,
+          bpm,
+          playing: deck ? deck.playing : !1
+        });
+      }
+    },
     D = t => {
       e.syncDeck(t);
     },
@@ -1457,6 +1469,7 @@ function Dashboard() {
             onBpm: t => w(e, t),
             onVolume: t => T(e, t),
             onFile: t => E(e, t),
+            onDemo: (rendering, bpm) => F(e, rendering, bpm),
             onSync: () => D(e)
           }, e))
         })]
