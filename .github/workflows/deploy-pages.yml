@@ -36,6 +36,9 @@ jobs:
       - name: Run regression tests
         run: npm test
       - name: Build app for GitHub Pages base path
+        env:
+          VITE_SUPABASE_URL: https://hyvsmtxewxpfnlzfjvca.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_IO9U9Ft1t0HEINC8iZ-rOg_gs96Yv0B
         run: npm run build -- --base /stripewolf-wave-base44/
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
