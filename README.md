@@ -1,8 +1,5 @@
 # Stripewolf Wave — Base44 migration
 
-Migrated from the user-owned live application:
-https://stripewolf-wave-copy-e9f401ce.base44.app/dashboard
-
 The seven original routes, synthesizer, DSP graph, effect presets, routing, MIDI mapping and timed automix are recovered from its published JavaScript. `src/recovered.js` contains formatted application code, with descriptive names restored for main components. It is not an official Base44 source export. Third-party bundled runtime code was excluded and replaced with npm dependencies. The original CSS is retained.
 
 ## Run and verify
