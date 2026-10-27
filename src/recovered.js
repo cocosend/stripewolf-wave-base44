@@ -463,6 +463,16 @@ var yg = 25,
         t.source.disconnect(), t.source = null;
       }
     }
+    seekTrack(id, seconds) {
+      const deck = this.get(id);
+      if (!deck || deck.mode !== `track` || !deck.buffer) return;
+      const duration = deck.buffer.duration;
+      if (!Number.isFinite(duration) || duration <= 0) return;
+      const next = Math.max(0, Math.min(duration - .001, seconds));
+      if (deck.source) this.stopTrack(id);
+      deck.offset = next;
+      if (deck.playing) this.startTrack(id);
+    }
     applyJogScratchPitch(e) {
       if (!this.ctx || !this.deckA || !this.deckB) return;
       let t = clamp(e, -.75, .75);
