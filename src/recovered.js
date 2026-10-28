@@ -8,8 +8,7 @@ import { dataApi as J } from './data';
 import { importTrack, importRenderedTrack, resumeAudio } from './audio-import';
 import { DemoPicker } from './DemoPicker';
 import { WaveMixer } from './WaveMixer';
-import { DrumPads } from './DrumPads';
-import { SamplePads } from './SamplePads';
+import {loopBounds,trackPosition as calculateTrackPosition} from './track-loop';
 var PRESETS = {
     maddix: {
       name: `HARDWELL & MADDIX RUMBLE`,
@@ -315,11 +314,14 @@ var yg = 25,
           cueGain: c,
           fxSend: l,
           route: `main`,
-          mode: `synth`,
+          mode: `track`,
           buffer: null,
           source: null,
           startedAt: 0,
           offset: 0,
+          loopBeats: null,
+          loopStart: 0,
+          loopEnd: 0,
           baseBpm: jg,
           pitch: 1,
           tempoRatio: 1,
@@ -410,7 +412,10 @@ var yg = 25,
     }
     applyRate(e) {
       let t = this.get(e);
-      !t || !this.ctx || !t.source || t.source.playbackRate.setTargetAtTime(this.rateFor(t), this.ctx.currentTime, .02);
+      if (!t || !this.ctx || !t.source) return;
+      t.offset = this.trackPosition(e);
+      t.startedAt = this.ctx.currentTime;
+      t.source.playbackRate.setTargetAtTime(this.rateFor(t), this.ctx.currentTime, .02);
     }
     syncDeck(e) {
       let t = this.get(e === `B` ? `A` : `B`),
@@ -451,15 +456,26 @@ var yg = 25,
       let r = t.createBufferSource();
       r.buffer = n.buffer, r.loop = !0, r.playbackRate.value = this.rateFor(n), r.connect(n.filter);
       let i = n.offset % n.buffer.duration;
+      if (n.loopBeats) {
+        const bounds=loopBounds(i,n.buffer.duration,n.loopBeats,n.baseBpm);
+        n.loopStart=bounds.start;
+        n.loopEnd=bounds.end;
+        r.loopStart = n.loopStart;
+        r.loopEnd = n.loopEnd;
+      }
       r.start(0, i), n.source = r, n.offset = i, n.startedAt = t.currentTime;
+    }
+    trackPosition(e) {
+      const deck = this.get(e);
+      if (!deck?.buffer) return 0;
+      if (!deck.playing || !deck.source || !this.ctx) return deck.offset;
+      return calculateTrackPosition(deck.offset,this.ctx.currentTime-deck.startedAt,deck.source.playbackRate.value,deck.buffer.duration,deck.loopBeats?deck.loopStart:0,deck.loopBeats?deck.loopEnd:0);
     }
     stopTrack(e) {
       let t = this.get(e);
       if (!(!t || !t.source)) {
         if (this.ctx) {
-          let e = (this.ctx.currentTime - t.startedAt) * this.rateFor(t),
-            n = t.buffer ? t.buffer.duration : 1;
-          t.offset = (t.offset + e) % n;
+          t.offset = this.trackPosition(e);
         }
         try {
           t.source.stop();
@@ -475,6 +491,17 @@ var yg = 25,
       const next = Math.max(0, Math.min(duration - .001, seconds));
       if (deck.source) this.stopTrack(id);
       deck.offset = next;
+      if (deck.playing) this.startTrack(id);
+    }
+    setLoop(id, beats) {
+      const deck = this.get(id);
+      if (!deck || !deck.buffer || deck.mode !== `track`) return;
+      const position = this.trackPosition(id);
+      if (deck.source) this.stopTrack(id);
+      deck.offset = position;
+      deck.loopBeats = beats;
+      deck.loopStart = 0;
+      deck.loopEnd = 0;
       if (deck.playing) this.startTrack(id);
     }
     engageFx(e) {
@@ -587,7 +614,7 @@ var yg = 25,
       if (!r || this.automixTimer || !(await this.ensureRunning())) return !1;
       let i = this.deckA,
         a = this.deckB;
-      if (!i || !a) return !1;
+      if (!i?.buffer || !a?.buffer || i.mode !== `track` || a.mode !== `track`) return !1;
       i.baseBpm = e, a.baseBpm = e, a.tempoRatio = 1, this.applyRate(`A`), this.applyRate(`B`), i.playing || (await this.play(`A`)), a.playing || (await this.play(`B`)), i.filter.type = `highpass`, i.filter.Q.value = .7, a.filter.type = `lowpass`, a.filter.Q.value = .7, a.filter.frequency.setValueAtTime(250, r.currentTime);
       let o = performance.now(),
         s = () => {
@@ -769,7 +796,7 @@ function Deck({
         }
       }
     },
-    f = t.mode === `synth` || !!t.trackName;
+    f = !!t.trackName;
   return (0, L.jsxs)(`div`, {
     className: `deck-panel`,
     children: [(0, L.jsxs)(`div`, {
@@ -780,19 +807,6 @@ function Deck({
       }), (0, L.jsx)(`span`, {
         className: `deck-status ${t.playing ? `live` : ``}`,
         children: t.playing ? `RUNNING` : `STANDBY`
-      })]
-    }), (0, L.jsxs)(`div`, {
-      className: `mode-switch`,
-      children: [(0, L.jsx)(`button`, {
-        type: `button`,
-        className: `mode-btn ${t.mode === `synth` ? `active` : ``}`,
-        onClick: () => n(`synth`),
-        children: `SYNTH GROOVE`
-      }), (0, L.jsx)(`button`, {
-        type: `button`,
-        className: `mode-btn ${t.mode === `track` ? `active` : ``}`,
-        onClick: () => n(`track`),
-        children: `MY TRACK`
       })]
     }), (0, L.jsxs)(L.Fragment, {
       children: [(0, L.jsxs)(`label`, {
@@ -808,7 +822,7 @@ function Deck({
       }), (0, L.jsx)(`div`, {
         className: `deck-track`,
         role: importError ? `alert` : undefined,
-        children: importError || (t.trackName ? `${t.trackName} · ${Math.floor(t.duration / 60)}:${String(Math.floor(t.duration % 60)).padStart(2, `0`)} (LOOP)` : t.mode === `synth` ? `Встроенный грув · Для сведения добавьте свой трек или выберите демо` : `NO FILE LOADED — выберите аудиофайл`)
+        children: importError || (t.trackName ? `${t.trackName} · ${Math.floor(t.duration / 60)}:${String(Math.floor(t.duration % 60)).padStart(2, `0`)}` : `NO FILE LOADED — выберите аудиофайл`)
       })]
     }), (0, L.jsx)(DemoPicker, {
       busy: c,
@@ -1219,7 +1233,7 @@ function SetLog({
 }
 var t_ = () => ({
     A: {
-      mode: `synth`,
+      mode: `track`,
       playing: !1,
       bpm: 145,
       volume: .8,
@@ -1227,7 +1241,7 @@ var t_ = () => ({
       duration: 0
     },
     B: {
-      mode: `synth`,
+      mode: `track`,
       playing: !1,
       bpm: 140,
       volume: .8,
@@ -1418,7 +1432,7 @@ function Dashboard() {
               }
             })));
             });
-            if (!started) a(!1);
+            if (!started) {a(!1);window.alert('Для автомикса загрузите треки в обе деки.');}
           } catch (error) {
             a(!1);
             window.alert(error instanceof Error ? error.message : `Автомикс недоступен`);
@@ -1441,8 +1455,10 @@ function Dashboard() {
             onBpm: t => w(`B`, t), onVolume: t => T(`B`, t), onFile: t => E(`B`, t),
             onDemo: (rendering, bpm) => F(`B`, rendering, bpm), onSync: () => D(`B`)
           })
-        }), (0, L.jsx)(DrumPads, { engine: e }), (0, L.jsx)(SamplePads, { engine: e })]
-      }), (0, L.jsxs)(`div`, {
+        })]
+      }), (0, L.jsxs)(`details`, {
+        className: `advanced-panel`,
+        children: [(0, L.jsx)(`summary`, {children: `EQ · FX · МАРШРУТИЗАЦИЯ`}), (0, L.jsxs)(`div`, {
         className: `sw-grid cols-3 sw-mt`,
         children: [(0, L.jsx)(DeckRouting, {
           deckKey: `A`,
@@ -1467,6 +1483,7 @@ function Dashboard() {
             }));
           }
         })]
+      })]
       }), (0, L.jsx)(`div`, {
         className: `sw-mt`,
         children: (0, L.jsx)(SetLog, {
@@ -1481,9 +1498,6 @@ function Dashboard() {
       }), (0, L.jsx)(Telemetry, {
         preset: PRESETS[n],
         decks: u
-      }), (0, L.jsx)(`div`, {
-        className: `console-note`,
-        children: `SYNTH GROOVE — встроенный грув под выбранный пресет. MY TRACK — свой аудиофайл: он декодируется и играет прямо в браузере, никуда не загружается. Роутинг-слайдеры (TONE / EQ / FX SEND) идут в тот же аудио-граф, что и эффекты: удерживайте пэд, чтобы ввести эффект в микс.`
       })]
     })
   });
