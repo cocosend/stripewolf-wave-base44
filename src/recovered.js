@@ -1070,10 +1070,10 @@ function MasterControls({
     className: `header-node`,
     children: [(0, L.jsxs)(`div`, {
       children: [(0, L.jsx)(`h1`, {
-        children: `STRIPEWOLFWAVE // HIGH-PERFORMANCE INTELLIGENCE`
+        children: `LIVE MIX`
       }), (0, L.jsx)(`div`, {
         className: `header-sub`,
-        children: `ДВЕ ВОЛНЫ · СВЕДЕНИЕ КАСАНИЕМ · ЖИВОЙ МИКС`
+        children: `STRIPEWOLF · ДВА КАНАЛА`
       }), a ? (0, L.jsx)(`div`, {
         className: `header-sub`,
         children: a
@@ -1097,7 +1097,7 @@ function MasterControls({
         className: `ai-trigger-btn ${e ? `active` : ``}`,
         onClick: i,
         disabled: e,
-        children: e ? `АВТОМИКС: ${t}%` : `АВТОМИКС · ПЕРЕХОД A → B`
+        children: e ? `ПЕРЕХОД ${t}%` : `АВТОМИКС A → B`
       })]
     })]
   });
