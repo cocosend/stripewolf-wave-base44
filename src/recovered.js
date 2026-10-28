@@ -8,6 +8,7 @@ import { dataApi as J } from './data';
 import { importTrack, importRenderedTrack, resumeAudio } from './audio-import';
 import { DemoPicker } from './DemoPicker';
 import { WaveMixer } from './WaveMixer';
+import { DrumPads } from './DrumPads';
 var PRESETS = {
     maddix: {
       name: `HARDWELL & MADDIX RUMBLE`,
@@ -300,7 +301,9 @@ var yg = 25,
         let c = e.createGain();
         c.gain.value = 0;
         let l = e.createGain();
-        return l.gain.value = 0, t.connect(n), n.connect(r), r.connect(i), i.connect(a), a.connect(o), o.connect(s), o.connect(c), o.connect(l), {
+        let analyser = e.createAnalyser(); analyser.fftSize = 1024;
+        return l.gain.value = 0, t.connect(n), n.connect(r), r.connect(i), i.connect(a), a.connect(o), o.connect(s), o.connect(c), o.connect(l), o.connect(analyser), {
+          analyser,
           filter: t,
           tone: n,
           eqLow: r,
@@ -1468,7 +1471,7 @@ function Dashboard() {
         profileLabel: `AUTOMIX: ${g.name} · ${g.transition_seconds}s · ${g.target_bpm} BPM · ${g.style}`
       }), (0, L.jsxs)(`div`, {
         className: `console-grid`,
-        children: [(0, L.jsx)(WaveMixer, { engine: e }), (0, L.jsx)(`div`, {
+        children: [(0, L.jsx)(WaveMixer, { engine: e }), (0, L.jsx)(DrumPads, { engine: e }), (0, L.jsx)(`div`, {
           className: `rack`,
           children: [`A`, `B`].map(e => (0, L.jsx)(Deck, {
             deckKey: e,
