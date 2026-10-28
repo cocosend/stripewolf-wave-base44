@@ -63,6 +63,10 @@ async function renderDemo(index: number): Promise<RenderedTrack> {
   return {buffer, name: `${demo.name} · ${demo.bpm} BPM`};
 }
 
+export function quickDemo(): {rendering: Promise<RenderedTrack>; bpm: number} {
+  return {rendering: renderDemo(0), bpm: demos[0].bpm};
+}
+
 export function DemoPicker({
   busy,
   onLoad
@@ -112,3 +116,4 @@ export function DemoPicker({
     </div>
   );
 }
+
