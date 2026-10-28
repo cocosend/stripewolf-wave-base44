@@ -324,7 +324,7 @@ var yg = 25,
           pitch: 1,
           tempoRatio: 1,
           volume: .8,
-          fade: 1,
+          fade: Math.SQRT1_2,
           playing: !1
         };
       };
@@ -589,11 +589,10 @@ var yg = 25,
     }
     async triggerAIAutomix(e, t, n) {
       let r = this.init();
-      if (!r || this.automixTimer) return;
-      await this.ensureRunning();
+      if (!r || this.automixTimer || !(await this.ensureRunning())) return !1;
       let i = this.deckA,
         a = this.deckB;
-      if (!i || !a) return;
+      if (!i || !a) return !1;
       i.baseBpm = e, a.baseBpm = e, a.tempoRatio = 1, this.applyRate(`A`), this.applyRate(`B`), i.playing || (await this.play(`A`)), a.playing || (await this.play(`B`)), i.filter.type = `highpass`, i.filter.Q.value = .7, a.filter.type = `lowpass`, a.filter.Q.value = .7, a.filter.frequency.setValueAtTime(250, r.currentTime);
       let o = performance.now(),
         s = () => {
@@ -604,6 +603,7 @@ var yg = 25,
           i.fade = c, a.fade = l, this.updateGain(`A`), this.updateGain(`B`), i.filter.frequency.setTargetAtTime(20 + e * 380, s, .04), a.filter.frequency.setTargetAtTime(250 + e * 12e3, s, .04), n && n(e), e >= 1 && this.finishAutomix();
         };
       this.automixTimer = window.setInterval(s, 30);
+      return !0;
     }
     finishAutomix() {
       this.automixTimer && window.clearInterval(this.automixTimer), this.automixTimer = null;
@@ -843,7 +843,7 @@ function Deck({
       className: `deck-head`,
       children: [(0, L.jsxs)(`span`, {
         className: `deck-tag`,
-        children: [`DECK `, e]
+        children: [`КАНАЛ `, e]
       }), (0, L.jsx)(`span`, {
         className: `deck-status ${t.playing ? `live` : ``}`,
         children: t.playing ? `RUNNING` : `STANDBY`
@@ -868,7 +868,7 @@ function Deck({
           ref: u,
           type: `file`,
           accept: `audio/*,.mp3,.wav,.m4a,.aac,.aiff,.aif,.flac,.ogg,.opus`,
-          "aria-label": `Загрузить трек в деку ${e}`,
+          "aria-label": `Загрузить трек в канал ${e}`,
           disabled: c,
           onChange: d
         })]
@@ -948,7 +948,7 @@ function DeckRouting({
   return (0, L.jsxs)(`div`, {
     className: `sw-panel`,
     children: [(0, L.jsxs)(`h3`, {
-      children: [`DECK `, e, ` ROUTING`]
+        children: [`КАНАЛ `, e, ` · ЗВУК`]
     }), (0, L.jsxs)(`label`, {
       className: `mix-row`,
       children: [(0, L.jsx)(`span`, {
@@ -1126,7 +1126,7 @@ function MasterControls({
         children: `STRIPEWOLFWAVE // HIGH-PERFORMANCE INTELLIGENCE`
       }), (0, L.jsx)(`div`, {
         className: `header-sub`,
-        children: `DUAL DECK RACK · SYNTH GROOVE + MY TRACKS · MASTER CHAIN`
+        children: `ДВЕ ВОЛНЫ · СВЕДЕНИЕ КАСАНИЕМ · ЖИВОЙ МИКС`
       }), a ? (0, L.jsx)(`div`, {
         className: `header-sub`,
         children: a
@@ -1150,7 +1150,7 @@ function MasterControls({
         className: `ai-trigger-btn ${e ? `active` : ``}`,
         onClick: i,
         disabled: e,
-        children: e ? `AI AUTOMIX ACTIVE: ${t}%` : `АВТОМИКСОВАНИЕ СВОДКИ И ПОДТЯЖКИ (AI)`
+        children: e ? `АВТОМИКС: ${t}%` : `АВТОМИКС · ПЕРЕХОД A → B`
       })]
     })]
   });
@@ -1455,8 +1455,11 @@ function Dashboard() {
         mixProgress: o,
         master: c,
         onMaster: O,
-        onAutomix: () => {
-          i || (e.applyPreset(PRESETS[n]), a(!0), s(0), t.current = !1, e.triggerAIAutomix(g.target_bpm, g.transition_seconds, n => {
+        onAutomix: async () => {
+          if (i) return;
+          e.applyPreset(PRESETS[n]), a(!0), s(0), t.current = !1;
+          try {
+            const started = await e.triggerAIAutomix(g.target_bpm, g.transition_seconds, n => {
             if (s(Math.round(n * 100)), !t.current) {
               t.current = !0;
               let n = e.get(`A`),
@@ -1484,25 +1487,31 @@ function Dashboard() {
                 playing: !0
               }
             })));
-          }));
+            });
+            if (!started) a(!1);
+          } catch (error) {
+            a(!1);
+            window.alert(error instanceof Error ? error.message : `Автомикс недоступен`);
+          }
         },
         profileLabel: `AUTOMIX: ${g.name} · ${g.transition_seconds}s · ${g.target_bpm} BPM · ${g.style}`
       }), (0, L.jsxs)(`div`, {
         className: `console-grid`,
-        children: [(0, L.jsx)(WaveMixer, { engine: e }), (0, L.jsx)(DrumPads, { engine: e }), (0, L.jsx)(SamplePads, { engine: e }), (0, L.jsx)(`div`, {
-          className: `rack`,
-          children: [`A`, `B`].map(e => (0, L.jsx)(Deck, {
-            deckKey: e,
-            deck: u[e],
-            onMode: t => C(e, t),
-            onPlay: () => S(e),
-            onBpm: t => w(e, t),
-            onVolume: t => T(e, t),
-            onFile: t => E(e, t),
-            onDemo: (rendering, bpm) => F(e, rendering, bpm),
-            onSync: () => D(e)
-          }, e))
-        })]
+        children: [(0, L.jsx)(WaveMixer, {
+          engine: e,
+          automixRunning: i,
+          automixProgress: o,
+          channelA: (0, L.jsx)(Deck, {
+            deckKey: `A`, deck: u.A, onMode: t => C(`A`, t), onPlay: () => S(`A`),
+            onBpm: t => w(`A`, t), onVolume: t => T(`A`, t), onFile: t => E(`A`, t),
+            onDemo: (rendering, bpm) => F(`A`, rendering, bpm), onSync: () => D(`A`)
+          }),
+          channelB: (0, L.jsx)(Deck, {
+            deckKey: `B`, deck: u.B, onMode: t => C(`B`, t), onPlay: () => S(`B`),
+            onBpm: t => w(`B`, t), onVolume: t => T(`B`, t), onFile: t => E(`B`, t),
+            onDemo: (rendering, bpm) => F(`B`, rendering, bpm), onSync: () => D(`B`)
+          })
+        }), (0, L.jsx)(DrumPads, { engine: e }), (0, L.jsx)(SamplePads, { engine: e })]
       }), (0, L.jsxs)(`div`, {
         className: `sw-grid cols-3 sw-mt`,
         children: [(0, L.jsx)(DeckRouting, {
@@ -2273,8 +2282,8 @@ var VK = [{
     id: `deckA.fxSend`,
     label: `DECK A — FX SEND`
   }, {
-    id: `deckA.jog`,
-    label: `DECK A — JOG SCRATCH`
+    id: `deckA.wave`,
+    label: `КАНАЛ A — ПОЗИЦИЯ ВОЛНЫ`
   }, {
     id: `deckB.volume`,
     label: `DECK B — LEVEL`
@@ -2294,8 +2303,8 @@ var VK = [{
     id: `deckB.fxSend`,
     label: `DECK B — FX SEND`
   }, {
-    id: `deckB.jog`,
-    label: `DECK B — JOG SCRATCH`
+    id: `deckB.wave`,
+    label: `КАНАЛ B — ПОЗИЦИЯ ВОЛНЫ`
   }, {
     id: `master.volume`,
     label: `MASTER LEVEL`
@@ -2324,7 +2333,7 @@ function UK(e, t, n) {
   }
   if (r === `deckA` || r === `deckB`) {
     let t = r === `deckA` ? `A` : `B`;
-    i === `volume` ? e.setVolume(t, n) : i === `tone` ? e.setDeckTone(t, n) : i === `fxSend` ? e.setDeckFxSend(t, n) : i === `jog` ? e.applyJogScratchPitch((n - .5) * 1.2) : i === `eqLow` ? e.setDeckEq(t, `low`, -26 + n * 32) : i === `eqMid` ? e.setDeckEq(t, `mid`, -26 + n * 32) : i === `eqHigh` && e.setDeckEq(t, `high`, -26 + n * 32);
+    i === `volume` ? e.setVolume(t, n) : i === `tone` ? e.setDeckTone(t, n) : i === `fxSend` ? e.setDeckFxSend(t, n) : i === `wave` ? e.seekTrack(t, (e.get(t)?.buffer?.duration || 0) * n) : i === `eqLow` ? e.setDeckEq(t, `low`, -26 + n * 32) : i === `eqMid` ? e.setDeckEq(t, `mid`, -26 + n * 32) : i === `eqHigh` && e.setDeckEq(t, `high`, -26 + n * 32);
     return;
   }
   r === `fx` && (n > .5 ? e.engageFx(i) : e.releaseFx(i));
@@ -2423,7 +2432,7 @@ function HardwareSetup() {
       children: [(0, L.jsx)(`h2`, {
         children: `HARDWARE SETUP`
       }), (0, L.jsx)(`p`, {
-        children: `Назначьте фейдеры, крутилки и джог-виллы внешнего контроллера на параметры пульта: включите LEARN, двиньте ручку на железе — привязка запишется и начнёт управлять звуком.`
+        children: `Назначьте фейдеры и ручки внешнего контроллера на параметры каналов и позицию волны: включите LEARN и двиньте ручку на железе.`
       })]
     }), (0, L.jsxs)(`div`, {
       className: `sw-panel`,
