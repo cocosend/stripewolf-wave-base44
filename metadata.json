@@ -1,0 +1,8 @@
+{
+  "name": "Stripewolf Wave",
+  "description": "DJ performance suite and wave mixer audio workstation for track looping and hardware mapping.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

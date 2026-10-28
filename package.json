@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite --host 0.0.0.0 --port 3000",
     "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
     "test": "node --import tsx --test tests/*.test.ts"
   },
