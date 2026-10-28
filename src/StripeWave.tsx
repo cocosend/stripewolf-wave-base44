@@ -1,17 +1,18 @@
 import {useEffect,useRef,useState,type PointerEvent,type ReactNode} from 'react';
 
-type Channel = {buffer:AudioBuffer|null;mode:string;playing:boolean;analyser:AnalyserNode;loopBeats:number|null};
+type Channel = {buffer:AudioBuffer|null;mode:string;playing:boolean;analyser:AnalyserNode;loopBeats:number|null;trackName?:string};
 type Engine = {get:(id:string)=>Channel|null;trackPosition:(id:string)=>number;seekTrack:(id:string,seconds:number)=>void;setLoop:(id:string,beats:number|null)=>void};
 type View = 'stripe'|'vertical'|'deck';
 const palette = {A:['#08f1d0','#76ffea','#f8db54'],B:['#ff4f9a','#a46fff','#6ee7ff']} as const;
 
-export function StripeWave({engine,id,controls}:{engine:Engine;id:'A'|'B';controls:ReactNode}) {
+export function StripeWave({engine,id,controls,onQuickDemo}:{engine:Engine;id:'A'|'B';controls:ReactNode;onQuickDemo:()=>Promise<void>}) {
  const canvas=useRef<HTMLCanvasElement>(null);
  const peaks=useRef<{buffer:AudioBuffer|null;values:Float32Array}>({buffer:null,values:new Float32Array(1024)});
  const analyserData=useRef(new Uint8Array(1024));
  const drag=useRef<number|null>(null),last=useRef(0);
- const [view,setView]=useState<View>('stripe');
+ const [view,setView]=useState<View>('deck');
  const [loop,setLoop]=useState<number|null>(engine.get(id)?.loopBeats??null);
+ const [loading,setLoading]=useState(false),[loadError,setLoadError]=useState('');
  const buffer=engine.get(id)?.buffer;
  useEffect(()=>{setLoop(engine.get(id)?.loopBeats??null)},[buffer,engine,id]);
 
@@ -46,7 +47,13 @@ export function StripeWave({engine,id,controls}:{engine:Engine;id:'A'|'B';contro
    glow.addColorStop(0,id==='A'?'#06483f':'#542246');glow.addColorStop(1,'#0a1222');
    context.globalAlpha=.42;context.fillStyle=glow;context.fillRect(0,0,w,h);context.globalAlpha=1;
    if(view==='deck'){
-    const cx=w/2,cy=h/2,r=Math.max(20,Math.min(w,h)*.39),position=active?(drag.current??engine.trackPosition(id))/audio.duration:0;
+    const overview=Math.min(72,Math.max(48,h*.24)),cx=w/2,cy=overview+(h-overview)/2,r=Math.max(20,Math.min(w*.38,(h-overview)*.42)),position=active?(drag.current??engine.trackPosition(id))/audio.duration:0;
+    context.fillStyle='#0a1623';context.fillRect(0,0,w,overview);
+    context.strokeStyle='#395065';context.lineWidth=1;
+    for(let p=0;p<w;p+=24){context.beginPath();context.moveTo(p,0);context.lineTo(p,overview);context.stroke()}
+    if(active){for(let p=0;p<w;p+=2){const index=Math.min(1023,Math.floor(p/w*1024)),length=Math.max(1,peaks.current.values[index]*overview*.45);context.fillStyle=colors[Math.floor(p/Math.max(1,w/8))%3];context.fillRect(p,overview/2-length,2,length*2)}
+     context.fillStyle='#fff';context.shadowColor=colors[0];context.shadowBlur=10;context.fillRect(position*w,0,2,overview);context.shadowBlur=0}
+    context.fillStyle='#526577';context.fillRect(0,overview-1,w,1);
     for(let ring=0;ring<4;ring++){context.beginPath();context.arc(cx,cy,r-ring*10,0,Math.PI*2);context.strokeStyle=ring===0?colors[0]:'#41546c';context.lineWidth=ring===0?3:1;context.stroke()}
     for(let tick=0;tick<48;tick++){const angle=tick*Math.PI/24-Math.PI/2;context.beginPath();context.moveTo(cx+Math.cos(angle)*(r-3),cy+Math.sin(angle)*(r-3));context.lineTo(cx+Math.cos(angle)*(r+4),cy+Math.sin(angle)*(r+4));context.strokeStyle=tick%4===0?colors[1]:'#456078';context.lineWidth=tick%4===0?2:1;context.stroke()}
     context.beginPath();context.arc(cx,cy,r-6,-Math.PI/2,-Math.PI/2+position*Math.PI*2);context.strokeStyle=colors[2];context.lineWidth=4;context.stroke();
@@ -79,7 +86,7 @@ export function StripeWave({engine,id,controls}:{engine:Engine;id:'A'|'B';contro
 
  const coordinate=(event:PointerEvent<HTMLCanvasElement>)=>{
   const rect=event.currentTarget.getBoundingClientRect();
-  return view==='vertical'?event.clientY-rect.top:view==='deck'?Math.atan2(event.clientY-rect.top-rect.height/2,event.clientX-rect.left-rect.width/2):event.clientX-rect.left;
+  return view==='vertical'?event.clientY-rect.top:view==='deck'?Math.atan2(event.clientY-rect.top-(Math.min(72,Math.max(48,rect.height*.24))+(rect.height-Math.min(72,Math.max(48,rect.height*.24)))/2),event.clientX-rect.left-rect.width/2):event.clientX-rect.left;
  };
  const move=(event:PointerEvent<HTMLCanvasElement>)=>{
   const channel=engine.get(id);
@@ -90,15 +97,19 @@ export function StripeWave({engine,id,controls}:{engine:Engine;id:'A'|'B';contro
  };
  const finish=()=>{const position=drag.current;drag.current=null;if(position!==null)engine.seekTrack(id,position)};
  const changeLoop=(beats:number|null)=>{engine.setLoop(id,beats);setLoop(engine.get(id)?.loopBeats??null)};
+ const loadDemo=async()=>{if(loading)return;setLoading(true);setLoadError('');try{await onQuickDemo()}catch(error){setLoadError(error instanceof Error?error.message:'Не удалось загрузить демо')}finally{setLoading(false)}};
  return <article className={`wave-channel deck-${id.toLowerCase()}`}>
-  <div className="wave-title"><strong>КАНАЛ {id}</strong><span>{view==='deck'?'PLATTER':view==='stripe'?'STRIPE':'WAVE'}</span></div>
+  <div className="wave-title"><strong>{id}</strong><span>{engine.get(id)?.trackName||'ЗАГРУЗИ ТРЕК'}</span></div>
   <div className="wave-tools" role="group" aria-label={`Вид канала ${id}`}>
    {([['stripe','ЛИНИЯ'],['vertical','ВОЛНА'],['deck','ДЕКА']] as const).map(([mode,label])=><button key={mode} type="button" className={view===mode?'active':''} aria-pressed={view===mode} onClick={()=>setView(mode)}>{label}</button>)}
   </div>
-  {controls}
-  <canvas ref={canvas} className={view} role="img" aria-label={`Позиция трека ${id}: перетаскивание для перемотки`}
+  <div className="wave-stage"><canvas ref={canvas} className={view} role="img" aria-label={`Позиция трека ${id}: перетаскивание для перемотки`}
    onPointerDown={event=>{const channel=engine.get(id);if(!channel?.buffer||channel.mode!=='track')return;drag.current=engine.trackPosition(id);last.current=coordinate(event);event.currentTarget.setPointerCapture(event.pointerId)}}
    onPointerMove={move} onPointerUp={finish} onPointerCancel={()=>{drag.current=null}}/>
+   {!buffer&&<button type="button" className="wave-quick-demo" disabled={loading} onClick={()=>void loadDemo()}>{loading?'ЗАГРУЗКА…':'▶ ДЕМО'}</button>}
+  </div>
+  {loadError&&<span role="alert" className="wave-load-error">{loadError}</span>}
+  {controls}
   <div className="wave-loop" role="group" aria-label={`Петля канала ${id}`}>
    <span>LOOP</span>{([null,1,2,4,8] as const).map(beats=><button key={beats??'full'} type="button" disabled={!buffer} aria-pressed={loop===beats} className={loop===beats?'active':''} onClick={()=>changeLoop(beats)}>{beats??'FULL'}</button>)}
   </div>
