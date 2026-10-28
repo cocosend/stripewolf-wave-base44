@@ -1484,7 +1484,9 @@ function Dashboard() {
           }
         })]
       })]
-      }), (0, L.jsx)(`div`, {
+      }), (0, L.jsxs)(`details`, {
+        className: `advanced-panel`,
+        children: [(0, L.jsx)(`summary`, {children: `СЕТ · ПРЕСЕТЫ · ДАННЫЕ`}), (0, L.jsx)(`div`, {
         className: `sw-mt`,
         children: (0, L.jsx)(SetLog, {
           engine: e,
@@ -1498,6 +1500,7 @@ function Dashboard() {
       }), (0, L.jsx)(Telemetry, {
         preset: PRESETS[n],
         decks: u
+      })]
       })]
     })
   });
