@@ -658,25 +658,26 @@ function useEngine() {
 }
 var zg = [{
   to: `/dashboard`,
-  label: `DASHBOARD`
+  label: `МИКШЕР`
 }, {
   to: `/presets`,
-  label: `PRESETS`
+  label: `ПРЕСЕТЫ`
 }, {
   to: `/automix-settings`,
-  label: `AUTOMIX`
-}, {
+  label: `АВТОМИКС`
+}];
+var secondaryNavigation = [{
   to: `/analytics`,
-  label: `ANALYTICS`
+  label: `Аналитика`
 }, {
   to: `/hardware-setup`,
   label: `MIDI`
 }, {
   to: `/audio-routing`,
-  label: `ROUTING`
+  label: `Аудиомаршруты`
 }, {
   to: `/profile`,
-  label: `PROFILE`
+  label: `Профиль`
 }];
 function Layout() {
   return (0, L.jsx)(EngineProvider, {
@@ -687,15 +688,31 @@ function Layout() {
         children: [(0, L.jsx)(`div`, {
           className: `sw-brand`,
           children: `STRIPEWOLFWAVE`
-        }), (0, L.jsx)(`nav`, {
+        }), (0, L.jsxs)(`nav`, {
           className: `sw-nav`,
-          children: zg.map(e => (0, L.jsx)($s, {
+          "aria-label": `Основная навигация`,
+          children: [zg.map(e => (0, L.jsx)($s, {
             to: e.to,
             className: ({
               isActive: e
             }) => `sw-nav-link ${e ? `active` : ``}`,
             children: e.label
-          }, e.to))
+          }, e.to)), (0, L.jsxs)(`details`, {
+            className: `sw-more`,
+            children: [(0, L.jsx)(`summary`, {
+              children: `ЕЩЁ`
+            }), (0, L.jsx)(`div`, {
+              className: `sw-more-links`,
+              children: secondaryNavigation.map(e => (0, L.jsx)($s, {
+                to: e.to,
+                className: ({
+                  isActive: e
+                }) => `sw-nav-link ${e ? `active` : ``}`,
+                onClick: e => { e.currentTarget.closest(`details`).open = !1; },
+                children: e.label
+              }, e.to))
+            })]
+          })]
         })]
       }), (0, L.jsx)(`main`, {
         children: (0, L.jsx)(us, {})
