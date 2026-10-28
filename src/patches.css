@@ -96,6 +96,10 @@ html{color-scheme:dark}body{padding:env(safe-area-inset-top) env(safe-area-inset
 .wave-cross input{accent-color:#ffda62;min-height:30px}
 .wave-record{margin:10px 2px 2px}
 .wave-record button,.wave-record a{border-color:#ffdc66;background:#182338;color:#fff;min-height:42px}
+.header-node{min-height:66px;margin-bottom:8px;padding:9px 14px}
+.header-node h1{color:#fff;letter-spacing:.15em;font-size:16px;margin:0}
+.header-node .header-sub{display:inline-block;font-size:10px;margin-right:12px}
+.wave-head{display:none}
 @media(max-width:700px){
  .stripewolf-page{padding-inline:3px}.dashboard-container{padding:4px}
  .header-node{padding:8px;gap:5px;margin-bottom:6px}
