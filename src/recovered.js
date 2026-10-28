@@ -772,6 +772,7 @@ function Deck({
   deck: t,
   onMode: n,
   onPlay: r,
+  onCue: cue,
   onBpm: i,
   onVolume: a,
   onFile: o,
@@ -868,6 +869,12 @@ function Deck({
         onClick: r,
         disabled: !f,
         children: t.playing ? `❚❚ PAUSE` : `▶ PLAY`
+      }), (0, L.jsx)(`button`, {
+        type: `button`,
+        className: `deck-cue`,
+        onClick: cue,
+        disabled: !f,
+        children: `CUE`
       }), e === `B` ? (0, L.jsx)(`button`, {
         type: `button`,
         className: `deck-sync`,
@@ -1449,11 +1456,13 @@ function Dashboard() {
           loadDemoB: () => { const demo = quickDemo(); return F(`B`, demo.rendering, demo.bpm); },
           channelA: (0, L.jsx)(Deck, {
             deckKey: `A`, deck: u.A, onMode: t => C(`A`, t), onPlay: () => S(`A`),
+            onCue: () => { e.pause(`A`); e.seekTrack(`A`, 0); y(`A`, {playing: !1}); },
             onBpm: t => w(`A`, t), onVolume: t => T(`A`, t), onFile: t => E(`A`, t),
             onDemo: (rendering, bpm) => F(`A`, rendering, bpm), onSync: () => D(`A`)
           }),
           channelB: (0, L.jsx)(Deck, {
             deckKey: `B`, deck: u.B, onMode: t => C(`B`, t), onPlay: () => S(`B`),
+            onCue: () => { e.pause(`B`); e.seekTrack(`B`, 0); y(`B`, {playing: !1}); },
             onBpm: t => w(`B`, t), onVolume: t => T(`B`, t), onFile: t => E(`B`, t),
             onDemo: (rendering, bpm) => F(`B`, rendering, bpm), onSync: () => D(`B`)
           })
