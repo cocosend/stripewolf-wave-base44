@@ -9,6 +9,7 @@ import { importTrack, importRenderedTrack, resumeAudio } from './audio-import';
 import { DemoPicker } from './DemoPicker';
 import { WaveMixer } from './WaveMixer';
 import { DrumPads } from './DrumPads';
+import { SamplePads } from './SamplePads';
 var PRESETS = {
     maddix: {
       name: `HARDWELL & MADDIX RUMBLE`,
@@ -1471,7 +1472,7 @@ function Dashboard() {
         profileLabel: `AUTOMIX: ${g.name} · ${g.transition_seconds}s · ${g.target_bpm} BPM · ${g.style}`
       }), (0, L.jsxs)(`div`, {
         className: `console-grid`,
-        children: [(0, L.jsx)(WaveMixer, { engine: e }), (0, L.jsx)(DrumPads, { engine: e }), (0, L.jsx)(`div`, {
+        children: [(0, L.jsx)(WaveMixer, { engine: e }), (0, L.jsx)(DrumPads, { engine: e }), (0, L.jsx)(SamplePads, { engine: e }), (0, L.jsx)(`div`, {
           className: `rack`,
           children: [`A`, `B`].map(e => (0, L.jsx)(Deck, {
             deckKey: e,
