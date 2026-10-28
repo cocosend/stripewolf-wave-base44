@@ -1,66 +1,106 @@
-import {useEffect,useRef,useState,type ReactNode,type PointerEvent} from 'react';
+import {useEffect,useRef,useState,type PointerEvent,type ReactNode} from 'react';
 
-type Deck={buffer:AudioBuffer|null;mode:string;playing:boolean;offset:number;startedAt:number;source:AudioBufferSourceNode|null;analyser:AnalyserNode;loopBeats:number|null;fade:number};
-type Engine={ctx:AudioContext|null;get:(id:string)=>Deck|null;rateFor:(deck:Deck)=>number;trackPosition:(id:string)=>number;seekTrack:(id:string,seconds:number)=>void;setLoop:(id:string,beats:number|null)=>void};
-const colors={A:['#0ff2d4','#ffe45c','#ff583e'],B:['#61e7ff','#b46bff','#ff4eaa']};
+type Channel = {buffer:AudioBuffer|null;mode:string;playing:boolean;analyser:AnalyserNode;loopBeats:number|null};
+type Engine = {get:(id:string)=>Channel|null;trackPosition:(id:string)=>number;seekTrack:(id:string,seconds:number)=>void;setLoop:(id:string,beats:number|null)=>void};
+type View = 'stripe'|'vertical'|'deck';
+const palette = {A:['#08f1d0','#76ffea','#f8db54'],B:['#ff4f9a','#a46fff','#6ee7ff']} as const;
 
-export function StripeWave({engine,id,controls}:{engine:Engine;id:'A'|'B';controls:ReactNode}){
+export function StripeWave({engine,id,controls}:{engine:Engine;id:'A'|'B';controls:ReactNode}) {
  const canvas=useRef<HTMLCanvasElement>(null);
- const peaks=useRef<{buffer:AudioBuffer|null;values:Float32Array}>({buffer:null,values:new Float32Array(512)});
+ const peaks=useRef<{buffer:AudioBuffer|null;values:Float32Array}>({buffer:null,values:new Float32Array(1024)});
+ const analyserData=useRef(new Uint8Array(1024));
  const drag=useRef<number|null>(null),last=useRef(0);
- const [orientation,setOrientation]=useState<'vertical'|'horizontal'>('vertical');
+ const [view,setView]=useState<View>('stripe');
  const [loop,setLoop]=useState<number|null>(engine.get(id)?.loopBeats??null);
- useEffect(()=>{let frame=0;
-  const draw=()=>{
-   const element=canvas.current,deck=engine.get(id),context=element?.getContext('2d');
-   if(!element||!context){frame=requestAnimationFrame(draw);return;}
-   const w=element.width,h=element.height,vertical=orientation==='vertical',axis=vertical?h:w,cross=vertical?w:h;
-   const buffer=deck?.mode==='track'?deck.buffer:null;
-   if(buffer!==peaks.current.buffer){
-    const values=new Float32Array(512);
-    if(buffer){const data=buffer.getChannelData(0),step=Math.max(1,Math.floor(data.length/512));
-     for(let i=0;i<512;i++){let max=0;for(let j=i*step;j<Math.min(data.length,(i+1)*step);j+=Math.max(1,Math.floor(step/32)))max=Math.max(max,Math.abs(data[j]));values[i]=max;}}
-    peaks.current={buffer,values};
-   }
-   context.fillStyle='#080d18';context.fillRect(0,0,w,h);
-   context.strokeStyle='#263347';context.lineWidth=1;
-   for(let p=0;p<axis;p+=40){context.beginPath();if(vertical){context.moveTo(0,p);context.lineTo(w,p);}else{context.moveTo(p,0);context.lineTo(p,h);}context.stroke();}
-   const pos=drag.current??engine.trackPosition(id),center=buffer&&buffer.duration>0?pos/buffer.duration*512:0;
-   const live=new Uint8Array(deck?.analyser?.fftSize||1024);
-   if(!buffer&&deck?.playing)deck.analyser.getByteTimeDomainData(live);
-   for(let p=0;p<axis;p+=2){
-    const idx=Math.floor(center+(p-axis/2)*512/axis*.28);
-    const amp=buffer?(idx>=0&&idx<512?peaks.current.values[idx]:0):(deck?.playing?Math.abs(live[Math.floor(p/axis*live.length)]-128)/128:0);
-    const length=Math.max(1,amp*cross*.46);
-    context.fillStyle=colors[id][Math.floor(p/Math.max(1,axis/12))%3];
-    if(vertical)context.fillRect(cross/2-length,p,length*2,2);else context.fillRect(p,cross/2-length,2,length*2);
-   }
-   context.fillStyle='#fff';context.shadowColor='#fff';context.shadowBlur=9;
-   if(vertical)context.fillRect(0,h/2,w,2);else context.fillRect(w/2,0,2,h);
-   context.shadowBlur=0;frame=requestAnimationFrame(draw);
+ const buffer=engine.get(id)?.buffer;
+ useEffect(()=>{setLoop(engine.get(id)?.loopBeats??null)},[buffer,engine,id]);
+
+ useEffect(()=>{
+  const element=canvas.current;
+  if(!element)return;
+  const context=element.getContext('2d',{alpha:false});
+  if(!context)return;
+  let frame=0,width=0,height=0;
+  const resize=()=>{
+   const rect=element.getBoundingClientRect(),ratio=Math.min(window.devicePixelRatio||1,2);
+   const nextWidth=Math.max(1,Math.round(rect.width*ratio)),nextHeight=Math.max(1,Math.round(rect.height*ratio));
+   if(element.width!==nextWidth||element.height!==nextHeight){element.width=nextWidth;element.height=nextHeight}
+   width=rect.width;height=rect.height;context.setTransform(ratio,0,0,ratio,0,0);
   };
-  frame=requestAnimationFrame(draw);return()=>cancelAnimationFrame(frame);
- },[engine,id,orientation]);
- const move=(event:PointerEvent<HTMLCanvasElement>)=>{
-  const deck=engine.get(id);if(drag.current===null||!deck?.buffer)return;
-  const rect=event.currentTarget.getBoundingClientRect(),current=orientation==='vertical'?event.clientY:event.clientX;
-  const extent=orientation==='vertical'?rect.height:rect.width;
-  drag.current=Math.max(0,Math.min(deck.buffer.duration-.001,drag.current-(current-last.current)/extent*deck.buffer.duration*.3));last.current=current;
+  resize();
+  const observer=new ResizeObserver(resize);observer.observe(element);
+  const draw=()=>{
+   const channel=engine.get(id),audio=channel?.mode==='track'?channel.buffer:null;
+   if(audio!==peaks.current.buffer){
+    const values=new Float32Array(1024);
+    if(audio){const data=audio.getChannelData(0),step=Math.max(1,Math.floor(data.length/values.length));
+     for(let index=0;index<values.length;index++){let maximum=0;const end=Math.min(data.length,(index+1)*step);
+      for(let sample=index*step;sample<end;sample+=Math.max(1,Math.floor(step/48)))maximum=Math.max(maximum,Math.abs(data[sample]));
+      values[index]=maximum;
+     }}
+    peaks.current={buffer:audio,values};
+   }
+   const w=width,h=height,colors=palette[id],active=!!audio&&audio.duration>0;
+   context.fillStyle='#07101c';context.fillRect(0,0,w,h);
+   const glow=context.createLinearGradient(0,0,w,h);
+   glow.addColorStop(0,id==='A'?'#06483f':'#542246');glow.addColorStop(1,'#0a1222');
+   context.globalAlpha=.42;context.fillStyle=glow;context.fillRect(0,0,w,h);context.globalAlpha=1;
+   if(view==='deck'){
+    const cx=w/2,cy=h/2,r=Math.max(20,Math.min(w,h)*.39),position=active?(drag.current??engine.trackPosition(id))/audio.duration:0;
+    for(let ring=0;ring<4;ring++){context.beginPath();context.arc(cx,cy,r-ring*10,0,Math.PI*2);context.strokeStyle=ring===0?colors[0]:'#41546c';context.lineWidth=ring===0?3:1;context.stroke()}
+    for(let tick=0;tick<48;tick++){const angle=tick*Math.PI/24-Math.PI/2;context.beginPath();context.moveTo(cx+Math.cos(angle)*(r-3),cy+Math.sin(angle)*(r-3));context.lineTo(cx+Math.cos(angle)*(r+4),cy+Math.sin(angle)*(r+4));context.strokeStyle=tick%4===0?colors[1]:'#456078';context.lineWidth=tick%4===0?2:1;context.stroke()}
+    context.beginPath();context.arc(cx,cy,r-6,-Math.PI/2,-Math.PI/2+position*Math.PI*2);context.strokeStyle=colors[2];context.lineWidth=4;context.stroke();
+    const angle=position*Math.PI*2-Math.PI/2;context.beginPath();context.arc(cx+Math.cos(angle)*(r-20),cy+Math.sin(angle)*(r-20),4,0,Math.PI*2);context.fillStyle=colors[0];context.fill();
+    context.fillStyle='#e9f7ff';context.font='700 12px system-ui';context.textAlign='center';context.fillText(active?(channel?.playing?'PLAY':'CUE'):'LOAD',cx,cy+4);
+   } else {
+    const vertical=view==='vertical',axis=vertical?h:w,cross=vertical?w:h;
+    context.strokeStyle='#244158';context.lineWidth=1;
+    for(let line=0;line<axis;line+=28){context.beginPath();if(vertical){context.moveTo(0,line);context.lineTo(w,line)}else{context.moveTo(line,0);context.lineTo(line,h)}context.stroke()}
+    const position=active?(drag.current??engine.trackPosition(id))/audio.duration:0,center=position*1024;
+    if(!active&&channel?.playing){if(analyserData.current.length!==channel.analyser.fftSize)analyserData.current=new Uint8Array(channel.analyser.fftSize);channel.analyser.getByteTimeDomainData(analyserData.current)}
+    for(let p=0;p<axis;p+=2){
+     const index=Math.floor(center+(p-axis/2)*1024/axis*.42);
+     const amplitude=active?(index>=0&&index<1024?peaks.current.values[index]:0):(channel?.playing?Math.abs(analyserData.current[Math.floor(p/axis*analyserData.current.length)]-128)/128:0);
+     if(amplitude<.008)continue;
+     const length=Math.max(1,amplitude*cross*.46);
+     context.fillStyle=colors[Math.floor(p/Math.max(1,axis/9))%3];
+     if(vertical)context.fillRect(cross/2-length,p,length*2,2);else context.fillRect(p,cross/2-length,2,length*2);
+    }
+    context.fillStyle='#f8fdff';context.shadowColor=colors[0];context.shadowBlur=12;
+    if(vertical)context.fillRect(0,h/2,w,2);else context.fillRect(w/2,0,2,h);
+    context.shadowBlur=0;
+    if(!active&&!channel?.playing){context.fillStyle='#a9c0d2';context.font='600 11px system-ui';context.textAlign='center';context.fillText('ЗАГРУЗИ ТРЕК ИЛИ ДЕМО',w/2,h/2-16)}
+   }
+   frame=requestAnimationFrame(draw);
+  };
+  frame=requestAnimationFrame(draw);
+  return()=>{cancelAnimationFrame(frame);observer.disconnect()};
+ },[engine,id,view]);
+
+ const coordinate=(event:PointerEvent<HTMLCanvasElement>)=>{
+  const rect=event.currentTarget.getBoundingClientRect();
+  return view==='vertical'?event.clientY-rect.top:view==='deck'?Math.atan2(event.clientY-rect.top-rect.height/2,event.clientX-rect.left-rect.width/2):event.clientX-rect.left;
  };
- const finish=()=>{const pos=drag.current;drag.current=null;if(pos!==null)engine.seekTrack(id,pos);};
- const changeLoop=(beats:number|null)=>{engine.setLoop(id,beats);setLoop(beats);};
+ const move=(event:PointerEvent<HTMLCanvasElement>)=>{
+  const channel=engine.get(id);
+  if(drag.current===null||!channel?.buffer)return;
+  const current=coordinate(event),extent=view==='vertical'?event.currentTarget.clientHeight:event.currentTarget.clientWidth;
+  const delta=view==='deck'?Math.atan2(Math.sin(current-last.current),Math.cos(current-last.current))/(Math.PI*2):-(current-last.current)/extent*.3;
+  drag.current=Math.max(0,Math.min(channel.buffer.duration-.001,drag.current+delta*channel.buffer.duration));last.current=current;
+ };
+ const finish=()=>{const position=drag.current;drag.current=null;if(position!==null)engine.seekTrack(id,position)};
+ const changeLoop=(beats:number|null)=>{engine.setLoop(id,beats);setLoop(engine.get(id)?.loopBeats??null)};
  return <article className={`wave-channel deck-${id.toLowerCase()}`}>
-  <div className="wave-title"><strong>DECK {id}</strong><span>{orientation==='vertical'?'VERTICAL WAVE':'STRIPE WAVE'}</span></div>
-  <div className="wave-tools" role="group" aria-label={`Вид деки ${id}`}>
-   <button type="button" className={orientation==='vertical'?'active':''} aria-pressed={orientation==='vertical'} onClick={()=>setOrientation('vertical')}>ВОЛНА</button>
-   <button type="button" className={orientation==='horizontal'?'active':''} aria-pressed={orientation==='horizontal'} onClick={()=>setOrientation('horizontal')}>ЛИНИЯ</button>
-  </div>
-  <canvas ref={canvas} width={480} height={400} className={orientation} role="img" aria-label={`Волна дорожки ${id}: перемотка перетаскиванием`}
-   onPointerDown={event=>{const deck=engine.get(id);if(!deck?.buffer||deck.mode!=='track')return;drag.current=engine.trackPosition(id);last.current=orientation==='vertical'?event.clientY:event.clientX;event.currentTarget.setPointerCapture(event.pointerId);}}
-   onPointerMove={move} onPointerUp={finish} onPointerCancel={()=>{drag.current=null;}}/>
-  <div className="wave-loop" role="group" aria-label={`Петля деки ${id}`}>
-   <span>LOOP</span>{([null,1,2,4,8] as const).map(beats=><button key={beats??'full'} type="button" disabled={!engine.get(id)?.buffer||engine.get(id)?.mode!=='track'} aria-pressed={loop===beats} className={loop===beats?'active':''} onClick={()=>changeLoop(beats)}>{beats??'FULL'}</button>)}
+  <div className="wave-title"><strong>КАНАЛ {id}</strong><span>{view==='deck'?'PLATTER':view==='stripe'?'STRIPE':'WAVE'}</span></div>
+  <div className="wave-tools" role="group" aria-label={`Вид канала ${id}`}>
+   {([['stripe','ЛИНИЯ'],['vertical','ВОЛНА'],['deck','ДЕКА']] as const).map(([mode,label])=><button key={mode} type="button" className={view===mode?'active':''} aria-pressed={view===mode} onClick={()=>setView(mode)}>{label}</button>)}
   </div>
   {controls}
+  <canvas ref={canvas} className={view} role="img" aria-label={`Позиция трека ${id}: перетаскивание для перемотки`}
+   onPointerDown={event=>{const channel=engine.get(id);if(!channel?.buffer||channel.mode!=='track')return;drag.current=engine.trackPosition(id);last.current=coordinate(event);event.currentTarget.setPointerCapture(event.pointerId)}}
+   onPointerMove={move} onPointerUp={finish} onPointerCancel={()=>{drag.current=null}}/>
+  <div className="wave-loop" role="group" aria-label={`Петля канала ${id}`}>
+   <span>LOOP</span>{([null,1,2,4,8] as const).map(beats=><button key={beats??'full'} type="button" disabled={!buffer} aria-pressed={loop===beats} className={loop===beats?'active':''} onClick={()=>changeLoop(beats)}>{beats??'FULL'}</button>)}
+  </div>
  </article>;
 }
