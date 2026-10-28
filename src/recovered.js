@@ -6,7 +6,7 @@ import { NavLink as $s, Outlet as us, useNavigate as Ro } from 'react-router-dom
 import { ResponsiveContainer as hT, BarChart as FK, CartesianGrid as MW, XAxis as YW, YAxis as fG, Tooltip as Xw, Bar as OV } from 'recharts';
 import { dataApi as J } from './data';
 import { importTrack, importRenderedTrack, resumeAudio } from './audio-import';
-import { DemoPicker } from './DemoPicker';
+import { DemoPicker, quickDemo } from './DemoPicker';
 import { WaveMixer } from './WaveMixer';
 import {loopBounds,trackPosition as calculateTrackPosition} from './track-loop';
 var PRESETS = {
@@ -1445,6 +1445,8 @@ function Dashboard() {
           engine: e,
           automixRunning: i,
           automixProgress: o,
+          loadDemoA: () => { const demo = quickDemo(); return F(`A`, demo.rendering, demo.bpm); },
+          loadDemoB: () => { const demo = quickDemo(); return F(`B`, demo.rendering, demo.bpm); },
           channelA: (0, L.jsx)(Deck, {
             deckKey: `A`, deck: u.A, onMode: t => C(`A`, t), onPlay: () => S(`A`),
             onBpm: t => w(`A`, t), onVolume: t => T(`A`, t), onFile: t => E(`A`, t),
