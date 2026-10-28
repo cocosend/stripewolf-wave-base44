@@ -118,3 +118,58 @@ html{color-scheme:dark}body{padding:env(safe-area-inset-top) env(safe-area-inset
  .wave-loop{padding:4px 2px;gap:1px}.wave-loop span{font-size:8px;width:auto;margin:0 2px}.wave-loop button{font-size:9px;min-height:34px}
  .wave-cross{margin:4px 0 7px;padding:5px 7px;bottom:auto}
 }
+
+/* WeDJ-inspired performance hierarchy: paired overviews, platters and transport. */
+.stripewolf-page{background:#05070b}
+.dashboard-container{max-width:1100px}
+.header-node{min-height:50px;background:#0c111a;border-color:#242f3c;box-shadow:none;margin-bottom:5px;padding:7px 12px}
+.header-node h1{font-size:13px;color:#f6f8fb}
+.header-node .header-sub{font-size:9px;color:#68788a}
+.ai-trigger-btn{background:#252d38;border:1px solid #536274;box-shadow:none;color:#eef3f9;font-size:11px;min-height:38px}
+.ai-trigger-btn.active{background:#b7204f}
+.wave-mixer{background:#070a10;border:1px solid #263140;border-radius:6px;box-shadow:none;padding:7px}
+.wave-grid{gap:4px;margin-top:0}
+.wave-channel{border:1px solid #293848;border-radius:4px;background:#070b12;box-shadow:none}
+.deck-a{--deck-accent:#03e6d4}.deck-b{--deck-accent:#f947a6}
+.wave-title{background:#101824;padding:7px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #314153}
+.wave-title strong{font-size:20px;color:var(--deck-accent);line-height:1}
+.wave-title span{color:#d6e1eb;letter-spacing:.02em;font-size:11px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.wave-tools{border-bottom:1px solid #273647;background:#0b111b}
+.wave-tools button{background:transparent;color:#79899b;border-radius:0;min-height:32px}
+.wave-tools button.active{background:color-mix(in srgb,var(--deck-accent) 14%,#0b111b);color:var(--deck-accent);box-shadow:inset 0 -2px var(--deck-accent)}
+.wave-stage{position:relative;background:#07101c;min-width:0}
+.wave-stage canvas{display:block;width:100%;border:0;border-bottom:1px solid #32495d}
+.wave-channel canvas.deck{height:clamp(240px,32vw,360px)}
+.wave-channel canvas.stripe{height:140px}
+.wave-channel canvas.vertical{height:280px}
+.wave-quick-demo{position:absolute;left:50%;top:65%;transform:translate(-50%,-50%);min-width:100px;min-height:38px;border:1px solid var(--deck-accent);border-radius:30px;background:#07131ee8;color:var(--deck-accent);font-weight:800;font-size:11px;letter-spacing:.09em;box-shadow:0 0 20px color-mix(in srgb,var(--deck-accent) 20%,transparent);cursor:pointer}
+.wave-quick-demo:disabled{opacity:.55}
+.wave-load-error{color:#ff7a91;padding:6px;font-size:11px}
+.wave-channel .deck-panel{border-top:1px solid #293848;background:#0b111b}
+.deck-panel .deck-head{display:none}
+.deck-panel .deck-file-btn,.deck-panel .demo-picker select{background:#141d2a;border:1px solid #405165;color:#c6d9e8}
+.deck-panel .deck-file-btn:hover,.deck-panel .demo-picker select:hover{border-color:var(--deck-accent)}
+.deck-panel .deck-actions{order:3}
+.deck-panel .deck-track{order:4;color:#a9bdca}
+.wave-channel .deck-play{background:var(--deck-accent);color:#061018}
+.wave-channel .deck-play.playing{background:#df315f;color:#fff}
+.wave-loop{order:10;border-top:1px solid #293848;background:#0c131e}
+.wave-loop span{color:#b5c4d1}
+.wave-loop button{background:#151e2c;border-color:#2d3b4b;color:#9aabbc}
+.wave-loop button.active{background:var(--deck-accent);color:#061018}
+.wave-cross{position:sticky;bottom:env(safe-area-inset-bottom);z-index:10;margin:5px 0;background:#101824;border:1px solid #445265;border-radius:4px;box-shadow:0 -7px 20px #0009;color:#d5e4ec}
+.wave-cross input{accent-color:#e9edf4}
+.wave-record{margin:7px 0 0}
+.wave-record button,.wave-record a{background:#121a26;border-color:#44546a;color:#d4e1ec;font-size:10px;min-height:36px}
+@media(max-width:700px){
+ .header-node{padding:5px 7px;min-height:38px}.header-node h1{font-size:11px}
+ .master-node{gap:4px}.ai-trigger-btn{min-height:32px;font-size:9px;padding:4px 6px}
+ .wave-mixer{padding:2px}.wave-grid{gap:2px}
+ .wave-title{padding:5px 4px;gap:4px}.wave-title strong{font-size:16px}.wave-title span{font-size:9px}
+ .wave-tools{padding:0}.wave-tools button{min-height:30px;font-size:8px}
+ .wave-channel canvas.deck{height:205px}.wave-channel canvas.stripe{height:100px}.wave-channel canvas.vertical{height:175px}
+ .wave-quick-demo{min-width:70px;min-height:32px;font-size:9px;top:68%}
+ .deck-panel .deck-file-btn,.deck-panel .demo-picker select{font-size:8px;min-height:34px;height:34px}
+ .deck-panel .deck-play,.deck-panel .deck-sync{min-height:38px;font-size:9px}
+ .wave-loop button{min-height:32px}.wave-cross{bottom:env(safe-area-inset-bottom);margin:3px 0;padding:4px 6px}
+}
