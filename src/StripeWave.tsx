@@ -9,7 +9,7 @@ export function StripeWave({engine,id,controls,onQuickDemo}:{engine:Engine;id:'A
  const canvas=useRef<HTMLCanvasElement>(null);
  const peaks=useRef<{buffer:AudioBuffer|null;values:Float32Array}>({buffer:null,values:new Float32Array(1024)});
  const analyserData=useRef(new Uint8Array(1024));
- const drag=useRef<number|null>(null),last=useRef(0);
+ const drag=useRef<number|null>(null),last=useRef(0),overviewDrag=useRef(false);
  const [view,setView]=useState<View>('deck');
  const [loop,setLoop]=useState<number|null>(engine.get(id)?.loopBeats??null);
  const [loading,setLoading]=useState(false),[loadError,setLoadError]=useState('');
@@ -58,7 +58,7 @@ export function StripeWave({engine,id,controls,onQuickDemo}:{engine:Engine;id:'A
     for(let tick=0;tick<48;tick++){const angle=tick*Math.PI/24-Math.PI/2;context.beginPath();context.moveTo(cx+Math.cos(angle)*(r-3),cy+Math.sin(angle)*(r-3));context.lineTo(cx+Math.cos(angle)*(r+4),cy+Math.sin(angle)*(r+4));context.strokeStyle=tick%4===0?colors[1]:'#456078';context.lineWidth=tick%4===0?2:1;context.stroke()}
     context.beginPath();context.arc(cx,cy,r-6,-Math.PI/2,-Math.PI/2+position*Math.PI*2);context.strokeStyle=colors[2];context.lineWidth=4;context.stroke();
     const angle=position*Math.PI*2-Math.PI/2;context.beginPath();context.arc(cx+Math.cos(angle)*(r-20),cy+Math.sin(angle)*(r-20),4,0,Math.PI*2);context.fillStyle=colors[0];context.fill();
-    context.fillStyle='#e9f7ff';context.font='700 12px system-ui';context.textAlign='center';context.fillText(active?(channel?.playing?'PLAY':'CUE'):'LOAD',cx,cy+4);
+    if(active){context.fillStyle='#e9f7ff';context.font='700 12px system-ui';context.textAlign='center';context.fillText(channel?.playing?'PLAY':'CUE',cx,cy+4)}
    } else {
     const vertical=view==='vertical',axis=vertical?h:w,cross=vertical?w:h;
     context.strokeStyle='#244158';context.lineWidth=1;
@@ -91,11 +91,12 @@ export function StripeWave({engine,id,controls,onQuickDemo}:{engine:Engine;id:'A
  const move=(event:PointerEvent<HTMLCanvasElement>)=>{
   const channel=engine.get(id);
   if(drag.current===null||!channel?.buffer)return;
+  if(overviewDrag.current){const rect=event.currentTarget.getBoundingClientRect();drag.current=Math.max(0,Math.min(channel.buffer.duration-.001,(event.clientX-rect.left)/rect.width*channel.buffer.duration));return}
   const current=coordinate(event),extent=view==='vertical'?event.currentTarget.clientHeight:event.currentTarget.clientWidth;
   const delta=view==='deck'?Math.atan2(Math.sin(current-last.current),Math.cos(current-last.current))/(Math.PI*2):-(current-last.current)/extent*.3;
   drag.current=Math.max(0,Math.min(channel.buffer.duration-.001,drag.current+delta*channel.buffer.duration));last.current=current;
  };
- const finish=()=>{const position=drag.current;drag.current=null;if(position!==null)engine.seekTrack(id,position)};
+ const finish=()=>{const position=drag.current;drag.current=null;overviewDrag.current=false;if(position!==null)engine.seekTrack(id,position)};
  const changeLoop=(beats:number|null)=>{engine.setLoop(id,beats);setLoop(engine.get(id)?.loopBeats??null)};
  const loadDemo=async()=>{if(loading)return;setLoading(true);setLoadError('');try{await onQuickDemo()}catch(error){setLoadError(error instanceof Error?error.message:'Не удалось загрузить демо')}finally{setLoading(false)}};
  return <article className={`wave-channel deck-${id.toLowerCase()}`}>
@@ -104,8 +105,8 @@ export function StripeWave({engine,id,controls,onQuickDemo}:{engine:Engine;id:'A
    {([['stripe','ЛИНИЯ'],['vertical','ВОЛНА'],['deck','ДЕКА']] as const).map(([mode,label])=><button key={mode} type="button" className={view===mode?'active':''} aria-pressed={view===mode} onClick={()=>setView(mode)}>{label}</button>)}
   </div>
   <div className="wave-stage"><canvas ref={canvas} className={view} role="img" aria-label={`Позиция трека ${id}: перетаскивание для перемотки`}
-   onPointerDown={event=>{const channel=engine.get(id);if(!channel?.buffer||channel.mode!=='track')return;drag.current=engine.trackPosition(id);last.current=coordinate(event);event.currentTarget.setPointerCapture(event.pointerId)}}
-   onPointerMove={move} onPointerUp={finish} onPointerCancel={()=>{drag.current=null}}/>
+   onPointerDown={event=>{const channel=engine.get(id);if(!channel?.buffer||channel.mode!=='track')return;const rect=event.currentTarget.getBoundingClientRect();overviewDrag.current=view==='deck'&&event.clientY-rect.top<Math.min(72,Math.max(48,rect.height*.24));drag.current=overviewDrag.current?Math.max(0,Math.min(channel.buffer.duration-.001,(event.clientX-rect.left)/rect.width*channel.buffer.duration)):engine.trackPosition(id);last.current=coordinate(event);event.currentTarget.setPointerCapture(event.pointerId)}}
+   onPointerMove={move} onPointerUp={finish} onPointerCancel={()=>{drag.current=null;overviewDrag.current=false}}/>
    {!buffer&&<button type="button" className="wave-quick-demo" disabled={loading} onClick={()=>void loadDemo()}>{loading?'ЗАГРУЗКА…':'▶ ДЕМО'}</button>}
   </div>
   {loadError&&<span role="alert" className="wave-load-error">{loadError}</span>}
