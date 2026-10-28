@@ -8,6 +8,9 @@ export interface ImportEngine {
     offset: number;
     playing: boolean;
     trackName?: string;
+    loopBeats?: number | null;
+    loopStart?: number;
+    loopEnd?: number;
   } | null;
   stopTrack(id: DeckId): void;
   groove(id: DeckId): { stop(): void };
@@ -62,6 +65,9 @@ function installBuffer(engine: ImportEngine, deck: DeckId, rendered: RenderedTra
   state.mode = 'track';
   state.trackName = name;
   state.offset = 0;
+  state.loopBeats = null;
+  state.loopStart = 0;
+  state.loopEnd = 0;
   state.playing = false;
   if (wasPlaying && context.state === 'running') {
     state.playing = true;
@@ -121,3 +127,4 @@ export async function resumeAudio(context: AudioContext): Promise<boolean> {
     clearTimeout(timer);
   }
 }
+
