@@ -150,6 +150,8 @@ html{color-scheme:dark}body{padding:env(safe-area-inset-top) env(safe-area-inset
 .deck-panel .deck-file-btn,.deck-panel .demo-picker select{background:#141d2a;border:1px solid #405165;color:#c6d9e8}
 .deck-panel .deck-file-btn:hover,.deck-panel .demo-picker select:hover{border-color:var(--deck-accent)}
 .deck-panel .deck-actions{order:3}
+.deck-panel .deck-cue{min-height:44px;min-width:48px;padding:0 8px;border:1px solid var(--deck-accent);background:#14202c;color:var(--deck-accent);font-size:11px;font-weight:800;cursor:pointer}
+.deck-panel .deck-cue:disabled{opacity:.35;cursor:not-allowed}
 .deck-panel .deck-track{order:4;color:#a9bdca}
 .wave-channel .deck-play{background:var(--deck-accent);color:#061018}
 .wave-channel .deck-play.playing{background:#df315f;color:#fff}
@@ -172,5 +174,6 @@ html{color-scheme:dark}body{padding:env(safe-area-inset-top) env(safe-area-inset
  .wave-quick-demo{min-width:70px;min-height:32px;font-size:9px;top:68%}
  .deck-panel .deck-file-btn,.deck-panel .demo-picker select{font-size:8px;min-height:34px;height:34px}
  .deck-panel .deck-play,.deck-panel .deck-sync{min-height:38px;font-size:9px}
+ .deck-panel .deck-cue{min-height:38px;min-width:34px;padding:0 3px;font-size:9px}
  .wave-loop button{min-height:32px}.wave-cross{bottom:env(safe-area-inset-bottom);margin:3px 0;padding:4px 6px}
 }
