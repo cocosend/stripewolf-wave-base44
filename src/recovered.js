@@ -477,11 +477,6 @@ var yg = 25,
       deck.offset = next;
       if (deck.playing) this.startTrack(id);
     }
-    applyJogScratchPitch(e) {
-      if (!this.ctx || !this.deckA || !this.deckB) return;
-      let t = clamp(e, -.75, .75);
-      this.deckA.pitch = clamp(1 + t, .25, 1.9), this.deckB.pitch = clamp(1 - t, .25, 1.9), this.applyRate(`A`), this.applyRate(`B`);
-    }
     engageFx(e) {
       let t = this.init();
       if (!t) return;
@@ -718,68 +713,6 @@ function Layout() {
         children: (0, L.jsx)(us, {})
       })]
     })
-  });
-}
-var Vg = 200,
-  Hg = Vg / 2,
-  Ug = (e, t, n) => {
-    let r = e.getBoundingClientRect(),
-      i = t - r.left - r.width / 2,
-      a = n - r.top - r.height / 2;
-    return Math.atan2(a, i);
-  };
-function JogWheel({
-  onScratch: e
-}) {
-  let t = (0, _.useRef)(null),
-    n = (0, _.useRef)(0),
-    r = (0, _.useRef)(!1),
-    i = (0, _.useRef)(0),
-    a = (0, _.useRef)(0),
-    o = (0, _.useRef)(0);
-  (0, _.useEffect)(() => {
-    let i = t.current;
-    if (!i) return;
-    let o = i.getContext(`2d`);
-    if (!o) return;
-    let s = 0,
-      c = () => {
-        o.clearRect(0, 0, Vg, Vg), o.beginPath(), o.arc(Hg, Hg, 95, 0, Math.PI * 2), o.fillStyle = `#111821`, o.fill(), o.lineWidth = 2, o.strokeStyle = `#303b48`, o.stroke();
-        for (let e = 30; e < 90; e += 10) o.beginPath(), o.arc(Hg, Hg, e, 0, Math.PI * 2), o.strokeStyle = `#1c2430`, o.stroke();
-        o.save(), o.translate(Hg, Hg), o.rotate(n.current), o.beginPath(), o.moveTo(0, 0), o.lineTo(0, -95), o.lineWidth = 4, o.strokeStyle = `#ff784b`, o.stroke(), o.beginPath(), o.arc(0, 0, 20, 0, Math.PI * 2), o.fillStyle = `#ff354e`, o.fill(), o.restore(), r.current || (a.current *= .95, n.current += a.current + .01, e(a.current)), s = requestAnimationFrame(c);
-      };
-    return c(), () => cancelAnimationFrame(s);
-  }, [e]);
-  let s = e => {
-      r.current = !0;
-      e.currentTarget.setPointerCapture(e.pointerId);
-      let t = Ug(e.currentTarget, e.clientX, e.clientY);
-      i.current = t - n.current, o.current = t;
-    },
-    c = t => {
-      if (!r.current) return;
-      let s = Ug(t.currentTarget, t.clientX, t.clientY);
-      n.current = s - i.current, a.current = Math.atan2(Math.sin(s - o.current), Math.cos(s - o.current)), o.current = s, e(a.current * 5);
-    },
-    l = () => {
-      r.current = !1;
-    };
-  return (0, L.jsxs)(`div`, {
-    className: `jog-container`,
-    children: [(0, L.jsxs)(`div`, {
-      className: `jog-label`,
-      children: [`MECHANICAL JOG CONTROLLER`, (0, L.jsx)(`br`, {}), `60FPS CANVAS LAYER`]
-    }), (0, L.jsx)(`canvas`, {
-      ref: t,
-      width: Vg,
-      height: Vg,
-      onPointerDown: s,
-      onPointerMove: c,
-      onPointerUp: l,
-      onPointerCancel: l,
-      onLostPointerCapture: l,
-      className: `jog-canvas`
-    })]
   });
 }
 function PresetSelector({
@@ -1095,13 +1028,13 @@ function Telemetry({
       })]
     }), (0, L.jsxs)(`div`, {
       className: `telemetry-cell`,
-      children: [`DECK A: `, (0, L.jsxs)(`span`, {
+      children: [`КАНАЛ A: `, (0, L.jsxs)(`span`, {
         className: `green`,
         children: [t.A.mode === `synth` ? `SYNTH` : `TRACK`, ` / `, t.A.bpm, ` BPM`]
       })]
     }), (0, L.jsxs)(`div`, {
       className: `telemetry-cell`,
-      children: [`DECK B: `, (0, L.jsxs)(`span`, {
+      children: [`КАНАЛ B: `, (0, L.jsxs)(`span`, {
         className: `green`,
         children: [t.B.mode === `synth` ? `SYNTH` : `TRACK`, ` / `, t.B.bpm, ` BPM`]
       })]
@@ -1240,7 +1173,7 @@ function SetLog({
       }, e))
     }) : (0, L.jsx)(`div`, {
       className: `sw-muted`,
-      children: `Запустите деку — таймер сета и точность бит-мэтчинга начнут писаться автоматически.`
+      children: `Запустите канал — таймер сета и точность бит-мэтчинга начнут писаться автоматически.`
     }), (0, L.jsxs)(`div`, {
       className: `sw-row sw-mt-small`,
       children: [(0, L.jsx)(`button`, {
@@ -1368,9 +1301,6 @@ function Dashboard() {
         }
       }));
     },
-    b = (0, _.useCallback)(t => {
-      e.applyJogScratchPitch(t);
-    }, [e]),
     x = t => {
       r(t), e.applyPreset(PRESETS[t]);
     },
@@ -2265,43 +2195,43 @@ function Profile() {
 }
 var VK = [{
     id: `deckA.volume`,
-    label: `DECK A — LEVEL`
+    label: `КАНАЛ A — LEVEL`
   }, {
     id: `deckA.tone`,
-    label: `DECK A — TONE`
+    label: `КАНАЛ A — TONE`
   }, {
     id: `deckA.eqLow`,
-    label: `DECK A — EQ LOW`
+    label: `КАНАЛ A — EQ LOW`
   }, {
     id: `deckA.eqMid`,
-    label: `DECK A — EQ MID`
+    label: `КАНАЛ A — EQ MID`
   }, {
     id: `deckA.eqHigh`,
-    label: `DECK A — EQ HIGH`
+    label: `КАНАЛ A — EQ HIGH`
   }, {
     id: `deckA.fxSend`,
-    label: `DECK A — FX SEND`
+    label: `КАНАЛ A — FX SEND`
   }, {
     id: `deckA.wave`,
     label: `КАНАЛ A — ПОЗИЦИЯ ВОЛНЫ`
   }, {
     id: `deckB.volume`,
-    label: `DECK B — LEVEL`
+    label: `КАНАЛ B — LEVEL`
   }, {
     id: `deckB.tone`,
-    label: `DECK B — TONE`
+    label: `КАНАЛ B — TONE`
   }, {
     id: `deckB.eqLow`,
-    label: `DECK B — EQ LOW`
+    label: `КАНАЛ B — EQ LOW`
   }, {
     id: `deckB.eqMid`,
-    label: `DECK B — EQ MID`
+    label: `КАНАЛ B — EQ MID`
   }, {
     id: `deckB.eqHigh`,
-    label: `DECK B — EQ HIGH`
+    label: `КАНАЛ B — EQ HIGH`
   }, {
     id: `deckB.fxSend`,
-    label: `DECK B — FX SEND`
+    label: `КАНАЛ B — FX SEND`
   }, {
     id: `deckB.wave`,
     label: `КАНАЛ B — ПОЗИЦИЯ ВОЛНЫ`
@@ -2655,7 +2585,7 @@ function AudioRouting() {
           children: [`A`, `B`].map(e => (0, L.jsxs)(`div`, {
             className: `route-row`,
             children: [(0, L.jsxs)(`span`, {
-              children: [`DECK `, e]
+              children: [`КАНАЛ `, e]
             }), (0, L.jsxs)(`div`, {
               className: `mode-switch`,
               children: [(0, L.jsx)(`button`, {
